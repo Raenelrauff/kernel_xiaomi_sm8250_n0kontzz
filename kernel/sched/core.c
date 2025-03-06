@@ -693,7 +693,6 @@ int tg_nop(struct task_group *tg, void *data)
 
 static void set_load_weight(struct task_struct *p, bool update_load)
 {
-	bool update_load = !(p->state & TASK_NEW);
 	int prio = p->static_prio - MAX_RT_PRIO;
 	struct load_weight lw;
 
@@ -5206,7 +5205,7 @@ void set_user_nice(struct task_struct *p, long nice)
 		put_prev_task(rq, p);
 
 	p->static_prio = NICE_TO_PRIO(nice);
-	set_load_weight(p);
+	set_load_weight(p, true);
 	old_prio = p->prio;
 	p->prio = effective_prio(p);
 	delta = p->prio - old_prio;
