@@ -4201,11 +4201,10 @@ static inline void update_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *s
 		update_tg_load_avg(cfs_rq, 0);
 
 	} else if (decayed) {
-		cfs_rq_util_change(cfs_rq, 0);
-
 		if (flags & UPDATE_TG)
 			update_tg_load_avg(cfs_rq, 0);
 	}
+	cfs_rq_util_change(cfs_rq, 0);
 }
 
 /*
@@ -4778,7 +4777,7 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 	 *
 	 * EEVDF: placement strategy #1 / #2
 	 */
-	if (sched_feat(PLACE_LAG) && cfs_rq->nr_running) {
+	if (sched_feat(PLACE_LAG) && cfs_rq->nr_running && se->vlag) {
 		struct sched_entity *curr = cfs_rq->curr;
 		unsigned long load;
 
@@ -8538,7 +8537,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	if (sd_flag & SD_BALANCE_WAKE) {
 		record_wakee(p);
 
-		if (static_branch_unlikely(&sched_energy_present)) {
+                if (sched_energy_enabled()) {
 			new_cpu = find_energy_efficient_cpu(p, prev_cpu, sync, 1);
 			if (new_cpu >= 0)
 				return new_cpu;
@@ -9293,12 +9292,15 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 	lockdep_assert_held(&env->src_rq->lock);
 
 	/*
-	 * We do not migrate tasks that are:
-	 * 1) throttled_lb_pair, or
-	 * 2) cannot be migrated to this CPU due to cpus_allowed, or
-	 * 3) running (obviously), or
-	 * 4) are cache-hot on their current CPU.
+	 * 1) delayed dequeued unless we migrate load, or
+	 * 2) throttled_lb_pair, or
+	 * 3) cannot be migrated to this CPU due to cpus_ptr, or
+	 * 4) running (obviously), or
+	 * 5) are cache-hot on their current CPU.
 	 */
+	if ((p->se.sched_delayed) && (env->migration_type != migrate_load))
+		return 0;
+
 	if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
 		return 0;
 
@@ -11097,7 +11099,7 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	if (busiest->group_type == group_misfit_task)
 		goto force_balance;
 
-	if (static_branch_unlikely(&sched_energy_present)) {
+	if (sched_energy_enabled()) {
 		struct root_domain *rd = env->dst_rq->rd;
 		int out_balance = 1;
 
