@@ -10,7 +10,7 @@ on:
       KERNEL_TREE_BRANCH:
         description: "Kernel Tree Branch"
         required: true
-        default: "base-munch"
+        default: "susfs-v1.5.5-munch"
 
       ADD_KERNELSU:
         description: "Add KernelSU"
