@@ -94,8 +94,8 @@ jobs:
         run: |
           export ARCH=arm64
           export SUBARCH=ARM64
-          export KBUILD_BUILD_USER="never"
-          export KBUILD_BUILD_HOST="worry"
+          export KBUILD_BUILD_USER="viasco"
+          export KBUILD_BUILD_HOST="vi"
 
           if [ ${{ github.event.inputs.ADD_KERNELSU }} == 'true' ]; then
             curl -LSs "${{ github.event.inputs.KERNELSU_SETUP_URL }}" | bash -s ${{ github.event.inputs.KERNELSU_SETUP_BRANCH }}
@@ -121,6 +121,31 @@ jobs:
           name: dtbo.img
           path: ${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/dtbo.img
 
+      - name: Generate filename with date and options
+        id: generate-filename
+        run: |
+          # Get current date and time in the format YYYYMMDD-HHMM
+          DATE_TIME=$(date '+%Y%m%d-%H%M')
+          
+          # Start with base name
+          BASE_NAME="${{ github.event.inputs.ANYKERNEL_ZIP_NAME }}"
+          
+          # Add KernelSU Next suffix if enabled
+          if [ ${{ github.event.inputs.ADD_KERNELSU }} == 'true' ]; then
+            BASE_NAME="${BASE_NAME}-KSUN"
+          fi
+          
+          # Add HyperOS/MIUI suffix if that option is enabled
+          if [ ${{ github.event.inputs.ANYKERNEL_HYPEROS_DTBO }} == 'true' ]; then
+            BASE_NAME="${BASE_NAME}-HyperOS"
+          fi
+          
+          # Add date-time at the end
+          FINAL_NAME="${BASE_NAME}-${DATE_TIME}"
+          
+          echo "FILENAME=${FINAL_NAME}" >> $GITHUB_OUTPUT
+          echo "Generated filename: ${FINAL_NAME}"
+
       - name: AnyKernel3
         if: ${{ success() && github.event.inputs.CREATE_ANYKERNEL == 'true' }}
         run: |
@@ -135,14 +160,14 @@ jobs:
             cp -f dtbo.img AnyKernel3
           fi
           cd AnyKernel3
-          zip -q -r "${{ github.event.inputs.ANYKERNEL_ZIP_NAME }}.zip" *
-          mv "${{ github.event.inputs.ANYKERNEL_ZIP_NAME }}.zip" ../
+          zip -q -r "${{ steps.generate-filename.outputs.FILENAME }}.zip" *
+          mv "${{ steps.generate-filename.outputs.FILENAME }}.zip" ../
         working-directory: ${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/
       - name: "Upload AnyKernel"
         uses: actions/upload-artifact@v4
         if: ${{ success() && github.event.inputs.CREATE_ANYKERNEL == 'true'}}
         with:
-          name: ${{ github.event.inputs.ANYKERNEL_ZIP_NAME }}
+          name: ${{ steps.generate-filename.outputs.FILENAME }}
           path: |
             ${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/AnyKernel3/
             !${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/AnyKernel3/.git
