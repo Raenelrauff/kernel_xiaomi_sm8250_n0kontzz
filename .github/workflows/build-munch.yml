@@ -135,9 +135,11 @@ jobs:
             BASE_NAME="${BASE_NAME}-KSUN"
           fi
           
-          # Add HyperOS/MIUI suffix if that option is enabled
+          # Add ROM type suffix - either HyperOS or AOSP
           if [ ${{ github.event.inputs.ANYKERNEL_HYPEROS_DTBO }} == 'true' ]; then
             BASE_NAME="${BASE_NAME}-HyperOS"
+          else
+            BASE_NAME="${BASE_NAME}-AOSP"
           fi
           
           # Add date-time at the end
