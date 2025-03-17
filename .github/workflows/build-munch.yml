@@ -13,7 +13,7 @@ on:
         default: "susfs-v1.5.5-munch"
 
       ADD_KERNELSU:
-        description: "Add KernelSU"
+        description: "Add KernelSU Next"
         type: boolean
         default: true
       KERNELSU_SETUP_URL:
@@ -21,9 +21,9 @@ on:
         required: false
         default: "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next/kernel/setup.sh"
       KERNELSU_SETUP_BRANCH:
-        description: "KernelSU Branch"
+        description: "KernelSU Next Branch"
         required: false
-        default: "next"
+        default: "next-susfs-dev"
 
       CREATE_ANYKERNEL:
         description: "Create AnyKernel"
