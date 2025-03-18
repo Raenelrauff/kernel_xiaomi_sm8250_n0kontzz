@@ -1,4 +1,4 @@
-name: Kernel Build Munch (AOSP + HyperOS)
+name: Kernel Build Munch (AOSP + MIUI/HyperOS)
 
 on:
   workflow_dispatch:
@@ -157,16 +157,16 @@ jobs:
             BASE_NAME="${BASE_NAME}-KSU"
           fi
           
-          # Generate AOSP and HyperOS filenames
+          # Generate AOSP and MIUI/HyperOS filenames
           AOSP_NAME="${BASE_NAME}-AOSP-${{ steps.build-info.outputs.build_date }}"
-          HYPEROS_NAME="${BASE_NAME}-HyperOS-${{ steps.build-info.outputs.build_date }}"
+          MIUI_HYPEROS_NAME="${BASE_NAME}-MIUI-HyperOS-${{ steps.build-info.outputs.build_date }}"
           
           echo "AOSP_FILENAME=${AOSP_NAME}" >> $GITHUB_OUTPUT
-          echo "HYPEROS_FILENAME=${HYPEROS_NAME}" >> $GITHUB_OUTPUT
+          echo "MIUI_HYPEROS_FILENAME=${MIUI_HYPEROS_NAME}" >> $GITHUB_OUTPUT
           
           echo "Generated filenames:"
           echo "AOSP: ${AOSP_NAME}"
-          echo "HyperOS: ${HYPEROS_NAME}"
+          echo "MIUI/HyperOS: ${MIUI_HYPEROS_NAME}"
 
       - name: Create AOSP AnyKernel3 Package
         run: |
@@ -182,24 +182,24 @@ jobs:
           zip -q -r "${{ steps.generate-filenames.outputs.AOSP_FILENAME }}.zip" *
           mv "${{ steps.generate-filenames.outputs.AOSP_FILENAME }}.zip" ../releases/
 
-      - name: Create HyperOS AnyKernel3 Package
+      - name: Create MIUI/HyperOS AnyKernel3 Package
         run: |
-          git clone --recursive --depth=1 ${{ github.event.inputs.ANYKERNEL_URL }} -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} AnyKernel3-HyperOS
+          git clone --recursive --depth=1 ${{ github.event.inputs.ANYKERNEL_URL }} -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} AnyKernel3-MIUI-HyperOS
           
-          # Copy kernel files to AnyKernel3 (excluding dtbo.img for HyperOS)
-          cp -f kernel_files/Image.gz AnyKernel3-HyperOS/ || true
-          cp -f kernel_files/dtb.img AnyKernel3-HyperOS/dtb || true
-          # Do NOT copy dtbo.img for HyperOS
+          # Copy kernel files to AnyKernel3 (excluding dtbo.img for MIUI/HyperOS)
+          cp -f kernel_files/Image.gz AnyKernel3-MIUI-HyperOS/ || true
+          cp -f kernel_files/dtb.img AnyKernel3-MIUI-HyperOS/dtb || true
+          # Do NOT copy dtbo.img for MIUI/HyperOS
           
           # Create zip
-          cd AnyKernel3-HyperOS
-          zip -q -r "${{ steps.generate-filenames.outputs.HYPEROS_FILENAME }}.zip" *
-          mv "${{ steps.generate-filenames.outputs.HYPEROS_FILENAME }}.zip" ../releases/
+          cd AnyKernel3-MIUI-HyperOS
+          zip -q -r "${{ steps.generate-filenames.outputs.MIUI_HYPEROS_FILENAME }}.zip" *
+          mv "${{ steps.generate-filenames.outputs.MIUI_HYPEROS_FILENAME }}.zip" ../releases/
 
       - name: Create Release Notes
         run: |
           cat > release_notes.md << EOF
-          # N0kernel for Munch (${{ steps.build-info.outputs.release_tag }})
+          # N0kontzzz for Munch (${{ steps.build-info.outputs.release_tag }})
           
           Build Date: $(date '+%Y-%m-%d %H:%M')
           
@@ -209,7 +209,7 @@ jobs:
           
           ## Files
           - **AOSP**: For AOSP-based ROMs
-          - **HyperOS**: For HyperOS/MIUI-based ROMs (does not include dtbo.img)
+          - **MIUI/HyperOS**: For MIUI/HyperOS-based ROMs (does not include dtbo.img)
           
           ## Installation
           Flash via recovery or KernelFlasher app.
@@ -220,10 +220,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.build-info.outputs.release_tag }}
-          name: "N0kernel Munch ${{ steps.build-info.outputs.release_tag }}"
+          name: "N0kontzzz Munch ${{ steps.build-info.outputs.release_tag }}"
           body_path: release_notes.md
           draft: false
           prerelease: false
           files: |
             releases/${{ steps.generate-filenames.outputs.AOSP_FILENAME }}.zip
-            releases/${{ steps.generate-filenames.outputs.HYPEROS_FILENAME }}.zip
+            releases/${{ steps.generate-filenames.outputs.MIUI_HYPEROS_FILENAME }}.zip
