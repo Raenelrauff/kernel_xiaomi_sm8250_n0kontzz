@@ -35,7 +35,7 @@ on:
         required: false
       ANYKERNEL_ZIP_NAME:
         description: "File name base (without .zip extension)"
-        default: "N0kernel-munch"
+        default: "N0kontzzz-munch"
         required: false
 
 jobs:
