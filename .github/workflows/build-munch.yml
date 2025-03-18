@@ -13,15 +13,15 @@ on:
         default: "susfs-v1.5.5-munch"
 
       ADD_KERNELSU:
-        description: "Add KernelSU"
+        description: "Add KernelSU Next"
         type: boolean
         default: true
       KERNELSU_SETUP_URL:
-        description: "KernelSU setup.sh URL"
+        description: "KernelSU Next setup.sh URL"
         required: false
         default: "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next/kernel/setup.sh"
       KERNELSU_SETUP_BRANCH:
-        description: "KernelSU Branch"
+        description: "KernelSU Next Branch"
         required: false
         default: "next-susfs-dev"
 
@@ -79,9 +79,9 @@ jobs:
         run: |
           echo "::group::Inputs"
           echo "Kernel Tree: ${{ github.event.inputs.KERNEL_TREE }}/tree/${{ github.event.inputs.KERNEL_TREE_BRANCH }}"
-          echo "Add KernelSU: ${{ github.event.inputs.ADD_KERNELSU }}"
-          echo "KernelSU Setup URL": ${{ github.event.inputs.KERNELSU_SETUP_URL }}
-          echo "KernelSU Branch": ${{ github.event.inputs.KERNELSU_SETUP_BRANCH }}
+          echo "Add KernelSU Next: ${{ github.event.inputs.ADD_KERNELSU }}"
+          echo "KernelSU Next Setup URL": ${{ github.event.inputs.KERNELSU_SETUP_URL }}
+          echo "KernelSU Next Branch": ${{ github.event.inputs.KERNELSU_SETUP_BRANCH }}
           echo "AnyKernel URL: ${{ github.event.inputs.ANYKERNEL_URL }}/tree/${{ github.event.inputs.ANYKERNEL_BRANCH }}"
           echo "Generated Release Tag: ${{ steps.build-info.outputs.release_tag }}"
           echo "::endgroup::"
@@ -150,11 +150,11 @@ jobs:
       - name: Generate filenames
         id: generate-filenames
         run: |
-          # Base name with KSU suffix if enabled
+          # Base name with KSUN suffix if enabled
           BASE_NAME="${{ github.event.inputs.ANYKERNEL_ZIP_NAME }}"
           
           if [ ${{ github.event.inputs.ADD_KERNELSU }} == 'true' ]; then
-            BASE_NAME="${BASE_NAME}-KSU"
+            BASE_NAME="${BASE_NAME}-KSUN"
           fi
           
           # Generate AOSP and MIUI/HyperOS filenames
@@ -205,7 +205,7 @@ jobs:
           
           ## Features
           - Based on ${{ github.event.inputs.KERNEL_TREE_BRANCH }}
-          $([ "${{ github.event.inputs.ADD_KERNELSU }}" == "true" ] && echo "- Includes KernelSU" || echo "")
+          $([ "${{ github.event.inputs.ADD_KERNELSU }}" == "true" ] && echo "- Includes KernelSU Next" || echo "")
           
           ## Files
           - **AOSP**: For AOSP-based ROMs
