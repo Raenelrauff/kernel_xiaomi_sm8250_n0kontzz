@@ -98,7 +98,7 @@ jobs:
       - name: Download and Extract Clang (if not cached)
         if: steps.cache-clang.outputs.cache-hit != 'true'
         run: |
-          wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz -O clang.tar.gz
+          wget https://github.com/greenforce-project/greenforce_clang -O clang.tar.gz
           mkdir -p clang
           tar -xf clang.tar.gz -C clang
           rm clang.tar.gz
