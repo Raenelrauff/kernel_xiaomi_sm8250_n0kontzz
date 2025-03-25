@@ -1,175 +1,229 @@
-# Create a short date for the release tag
-      SHORT_DATE=$(date '+%Y%m%d')
-      echo "short_date=${SHORT_DATE}" >> $GITHUB_OUTPUT
-      
-      # Extract version from branch name
-      # This assumes branch names like "susfs-v1.5.5-munch"
-      BRANCH_NAME="${{ github.event.inputs.KERNEL_TREE_BRANCH }}"
-      
-      # Try to extract version with regex
-      if [[ $BRANCH_NAME =~ v([0-9]+\.[0-9]+\.[0-9]+) ]]; then
-        VERSION="${BASH_REMATCH[1]}"
-      else
-        # If no version found in branch name, use default
-        VERSION="1.0.0"
-      fi
-      
-      # Create release tag
-      RELEASE_TAG="v${VERSION}-${SHORT_DATE}"
-      echo "release_tag=${RELEASE_TAG}" >> $GITHUB_OUTPUT
-      
-      echo "Build date: ${DATE_TIME}"
-      echo "Generated release tag: ${RELEASE_TAG}"
+name: Kernel Build Munch (AOSP + MIUI/HyperOS)
 
-  - name: Display Inputs
-    run: |
-      echo "::group::Inputs"
-      echo "Kernel Tree: ${{ github.event.inputs.KERNEL_TREE }}/tree/${{ github.event.inputs.KERNEL_TREE_BRANCH }}"
-      echo "Add KernelSU Next: ${{ github.event.inputs.ADD_KERNELSU }}"
-      echo "KernelSU Next Setup URL": ${{ github.event.inputs.KERNELSU_SETUP_URL }}
-      echo "KernelSU Next Branch": ${{ github.event.inputs.KERNELSU_SETUP_BRANCH }}
-      echo "AnyKernel URL: ${{ github.event.inputs.ANYKERNEL_URL }}/tree/${{ github.event.inputs.ANYKERNEL_BRANCH }}"
-      echo "Generated Release Tag: ${{ steps.build-info.outputs.release_tag }}"
-      echo "::endgroup::"
+on:
+  workflow_dispatch:
+    inputs:
+      KERNEL_TREE:
+        description: "Kernel Tree"
+        default: "https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz"
+        required: true
+      KERNEL_TREE_BRANCH:
+        description: "Kernel Tree Branch"
+        required: true
+        default: "susfs-v1.5.5-munch"
 
-  - name: Cache Clang
-    id: cache-clang
-    uses: actions/cache@v4
-    with:
-      path: clang
-      key: greenforce-clang
-      restore-keys: |
-        greenforce-clang-
+      ADD_KERNELSU:
+        description: "Add KernelSU Next"
+        type: boolean
+        default: true
+      KERNELSU_SETUP_URL:
+        description: "KernelSU Next setup.sh URL"
+        required: false
+        default: "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next/kernel/setup.sh"
+      KERNELSU_SETUP_BRANCH:
+        description: "KernelSU Next Branch"
+        required: false
+        default: "next-susfs-dev"
 
-  - name: Download and Extract Clang (if not cached)
-    if: steps.cache-clang.outputs.cache-hit != 'true'
-    run: |
-      wget https://github.com/greenforce-project/greenforce_clang/releases/download/latest/clang.tar.gz -O clang.tar.gz
-      mkdir -p clang
-      tar -xf clang.tar.gz -C clang
-      rm clang.tar.gz
+      ANYKERNEL_URL:
+        description: "AnyKernel URL"
+        default: "https://github.com/bimoalfarrabi/AKmunch"
+        required: false
+      ANYKERNEL_BRANCH:
+        description: "AnyKernel Branch"
+        default: "main"
+        required: false
+      ANYKERNEL_ZIP_NAME:
+        description: "File name base (without .zip extension)"
+        default: "N0kontzzz-munch"
+        required: false
 
-  - name: Initialize workspace
-    run: |
-      echo "tools_folder=$(pwd)" >> $GITHUB_OUTPUT
-      sudo apt install flex libncurses6 -y
-      git clone --depth=1 ${{ github.event.inputs.KERNEL_TREE }} -b ${{ github.event.inputs.KERNEL_TREE_BRANCH }} kernel_tree
-      echo "kernel_folder=$(pwd)/kernel_tree" >> $GITHUB_OUTPUT
-      
-      # Create releases directory
-      mkdir -p releases
-    id: workspace
+jobs:
+  build:
+    if: github.event.repository.owner.id == github.event.sender.id
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Generate build info
+        id: build-info
+        run: |
+          # Generate date-time stamp
+          DATE_TIME=$(date '+%Y%m%d-%H%M')
+          echo "build_date=${DATE_TIME}" >> $GITHUB_OUTPUT
+          
+          # Create a short date for the release tag
+          SHORT_DATE=$(date '+%Y%m%d')
+          echo "short_date=${SHORT_DATE}" >> $GITHUB_OUTPUT
+          
+          # Extract version from branch name
+          # This assumes branch names like "susfs-v1.5.5-munch"
+          BRANCH_NAME="${{ github.event.inputs.KERNEL_TREE_BRANCH }}"
+          
+          # Try to extract version with regex
+          if [[ $BRANCH_NAME =~ v([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+          else
+            # If no version found in branch name, use default
+            VERSION="1.0.0"
+          fi
+          
+          # Create release tag
+          RELEASE_TAG="v${VERSION}-${SHORT_DATE}"
+          echo "release_tag=${RELEASE_TAG}" >> $GITHUB_OUTPUT
+          
+          echo "Build date: ${DATE_TIME}"
+          echo "Generated release tag: ${RELEASE_TAG}"
 
-  - name: Building kernel
-    run: |
-      export ARCH=arm64
-      export SUBARCH=ARM64
-      export KBUILD_BUILD_USER="never"
-      export KBUILD_BUILD_HOST="worry"
+      - name: Display Inputs
+        run: |
+          echo "::group::Inputs"
+          echo "Kernel Tree: ${{ github.event.inputs.KERNEL_TREE }}/tree/${{ github.event.inputs.KERNEL_TREE_BRANCH }}"
+          echo "Add KernelSU Next: ${{ github.event.inputs.ADD_KERNELSU }}"
+          echo "KernelSU Next Setup URL": ${{ github.event.inputs.KERNELSU_SETUP_URL }}
+          echo "KernelSU Next Branch": ${{ github.event.inputs.KERNELSU_SETUP_BRANCH }}
+          echo "AnyKernel URL: ${{ github.event.inputs.ANYKERNEL_URL }}/tree/${{ github.event.inputs.ANYKERNEL_BRANCH }}"
+          echo "Generated Release Tag: ${{ steps.build-info.outputs.release_tag }}"
+          echo "::endgroup::"
 
-      if [ ${{ github.event.inputs.ADD_KERNELSU }} == 'true' ]; then
-        curl -LSs "${{ github.event.inputs.KERNELSU_SETUP_URL }}" | bash -s ${{ github.event.inputs.KERNELSU_SETUP_BRANCH }}
-      fi
+      - name: Cache Clang
+        id: cache-clang
+        uses: actions/cache@v4
+        with:
+          path: clang
+          key: greenforce-clang
+          restore-keys: |
+            greenforce-clang-
 
-      make O=out vendor/munch_defconfig PATH="${{ steps.workspace.outputs.tools_folder }}/clang/bin:$PATH"
-      make O=out CC=clang -j$(nproc --all) PATH="${{ steps.workspace.outputs.tools_folder }}/clang/bin:$PATH" CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1
-    working-directory: ${{ steps.workspace.outputs.kernel_folder }}
+      - name: Download and Extract Clang (if not cached)
+        if: steps.cache-clang.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/greenforce-project/greenforce_clang/releases/download/latest/greenforce-clang-21.0.0git-23032025.tar.gz  -O clang.tar.gz
+          mkdir -p clang
+          tar -xf clang.tar.gz -C clang
+          rm clang.tar.gz
 
-  - name: Prepare kernel files for packaging
-    run: |
-      # Create a directory to store build artifacts
-      mkdir -p kernel_files
-      
-      # Copy all required files
-      if [ -e "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/Image.gz" ]; then
-        cp "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/Image.gz" kernel_files/
-      fi
-      
-      if [ -e "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/dtb.img" ]; then
-        cp "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/dtb.img" kernel_files/
-      fi
-      
-      if [ -e "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/dtbo.img" ]; then
-        cp "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/dtbo.img" kernel_files/
-      fi
+      - name: Initialize workspace
+        run: |
+          echo "tools_folder=$(pwd)" >> $GITHUB_OUTPUT
+          sudo apt install flex libncurses6 -y
+          git clone --depth=1 ${{ github.event.inputs.KERNEL_TREE }} -b ${{ github.event.inputs.KERNEL_TREE_BRANCH }} kernel_tree
+          echo "kernel_folder=$(pwd)/kernel_tree" >> $GITHUB_OUTPUT
+          
+          # Create releases directory
+          mkdir -p releases
+        id: workspace
 
-  - name: Generate filenames
-    id: generate-filenames
-    run: |
-      # Base name with KSUN suffix if enabled
-      BASE_NAME="${{ github.event.inputs.ANYKERNEL_ZIP_NAME }}"
-      
-      if [ ${{ github.event.inputs.ADD_KERNELSU }} == 'true' ]; then
-        BASE_NAME="${BASE_NAME}-KSUN"
-      fi
-      
-      # Generate AOSP and MIUI/HyperOS filenames
-      AOSP_NAME="${BASE_NAME}-AOSP-${{ steps.build-info.outputs.build_date }}"
-      MIUI_HYPEROS_NAME="${BASE_NAME}-MIUI-HyperOS-${{ steps.build-info.outputs.build_date }}"
-      
-      echo "AOSP_FILENAME=${AOSP_NAME}" >> $GITHUB_OUTPUT
-      echo "MIUI_HYPEROS_FILENAME=${MIUI_HYPEROS_NAME}" >> $GITHUB_OUTPUT
-      
-      echo "Generated filenames:"
-      echo "AOSP: ${AOSP_NAME}"
-      echo "MIUI/HyperOS: ${MIUI_HYPEROS_NAME}"
+      - name: Building kernel
+        run: |
+          export ARCH=arm64
+          export SUBARCH=ARM64
+          export KBUILD_BUILD_USER="never"
+          export KBUILD_BUILD_HOST="worry"
 
-  - name: Create AOSP AnyKernel3 Package
-    run: |
-      git clone --recursive --depth=1 ${{ github.event.inputs.ANYKERNEL_URL }} -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} AnyKernel3-AOSP
-      
-      # Copy kernel files to AnyKernel3
-      cp -f kernel_files/Image.gz AnyKernel3-AOSP/ || true
-      cp -f kernel_files/dtb.img AnyKernel3-AOSP/dtb || true
-      cp -f kernel_files/dtbo.img AnyKernel3-AOSP/ || true
-      
-      # Create zip
-      cd AnyKernel3-AOSP
-      zip -q -r "${{ steps.generate-filenames.outputs.AOSP_FILENAME }}.zip" *
-      mv "${{ steps.generate-filenames.outputs.AOSP_FILENAME }}.zip" ../releases/
+          if [ ${{ github.event.inputs.ADD_KERNELSU }} == 'true' ]; then
+            curl -LSs "${{ github.event.inputs.KERNELSU_SETUP_URL }}" | bash -s ${{ github.event.inputs.KERNELSU_SETUP_BRANCH }}
+          fi
 
-  - name: Create MIUI/HyperOS AnyKernel3 Package
-    run: |
-      git clone --recursive --depth=1 ${{ github.event.inputs.ANYKERNEL_URL }} -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} AnyKernel3-MIUI-HyperOS
-      
-      # Copy kernel files to AnyKernel3 (excluding dtbo.img for MIUI/HyperOS)
-      cp -f kernel_files/Image.gz AnyKernel3-MIUI-HyperOS/ || true
-      cp -f kernel_files/dtb.img AnyKernel3-MIUI-HyperOS/dtb || true
-      # Do NOT copy dtbo.img for MIUI/HyperOS
-      
-      # Create zip
-      cd AnyKernel3-MIUI-HyperOS
-      zip -q -r "${{ steps.generate-filenames.outputs.MIUI_HYPEROS_FILENAME }}.zip" *
-      mv "${{ steps.generate-filenames.outputs.MIUI_HYPEROS_FILENAME }}.zip" ../releases/
+          make O=out vendor/munch_defconfig PATH="${{ steps.workspace.outputs.tools_folder }}/clang/bin:$PATH"
+          make O=out CC=clang -j$(nproc --all) PATH="${{ steps.workspace.outputs.tools_folder }}/clang/bin:$PATH" CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1
+        working-directory: ${{ steps.workspace.outputs.kernel_folder }}
 
-  - name: Create Release Notes
-    run: |
-      cat > release_notes.md << EOF
-      # N0kontzzz for Munch (${{ steps.build-info.outputs.release_tag }})
-      
-      Build Date: $(date '+%Y-%m-%d %H:%M')
-      
-      ## Features
-      - Based on ${{ github.event.inputs.KERNEL_TREE_BRANCH }}
-      $([ "${{ github.event.inputs.ADD_KERNELSU }}" == "true" ] && echo "- Includes KernelSU Next" || echo "")
-      
-      ## Files
-      - **AOSP**: For AOSP-based ROMs
-      - **MIUI/HyperOS**: For MIUI/HyperOS-based ROMs (does not include dtbo.img)
-      
-      ## Installation
-      Flash via recovery or KernelFlasher app.
-      EOF
+      - name: Prepare kernel files for packaging
+        run: |
+          # Create a directory to store build artifacts
+          mkdir -p kernel_files
+          
+          # Copy all required files
+          if [ -e "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/Image.gz" ]; then
+            cp "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/Image.gz" kernel_files/
+          fi
+          
+          if [ -e "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/dtb.img" ]; then
+            cp "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/dtb.img" kernel_files/
+          fi
+          
+          if [ -e "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/dtbo.img" ]; then
+            cp "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/dtbo.img" kernel_files/
+          fi
 
-  - name: Create GitHub Release
-    id: create_release
-    uses: softprops/action-gh-release@v1
-    with:
-      tag_name: ${{ steps.build-info.outputs.release_tag }}
-      name: "N0kontzzz Munch ${{ steps.build-info.outputs.release_tag }}"
-      body_path: release_notes.md
-      draft: false
-      prerelease: false
-      files: |
-        releases/${{ steps.generate-filenames.outputs.AOSP_FILENAME }}.zip
-        releases/${{ steps.generate-filenames.outputs.MIUI_HYPEROS_FILENAME }}.zip
+      - name: Generate filenames
+        id: generate-filenames
+        run: |
+          # Base name with KSUN suffix if enabled
+          BASE_NAME="${{ github.event.inputs.ANYKERNEL_ZIP_NAME }}"
+          
+          if [ ${{ github.event.inputs.ADD_KERNELSU }} == 'true' ]; then
+            BASE_NAME="${BASE_NAME}-KSUN"
+          fi
+          
+          # Generate AOSP and MIUI/HyperOS filenames
+          AOSP_NAME="${BASE_NAME}-AOSP-${{ steps.build-info.outputs.build_date }}"
+          MIUI_HYPEROS_NAME="${BASE_NAME}-MIUI-HyperOS-${{ steps.build-info.outputs.build_date }}"
+          
+          echo "AOSP_FILENAME=${AOSP_NAME}" >> $GITHUB_OUTPUT
+          echo "MIUI_HYPEROS_FILENAME=${MIUI_HYPEROS_NAME}" >> $GITHUB_OUTPUT
+          
+          echo "Generated filenames:"
+          echo "AOSP: ${AOSP_NAME}"
+          echo "MIUI/HyperOS: ${MIUI_HYPEROS_NAME}"
+
+      - name: Create AOSP AnyKernel3 Package
+        run: |
+          git clone --recursive --depth=1 ${{ github.event.inputs.ANYKERNEL_URL }} -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} AnyKernel3-AOSP
+          
+          # Copy kernel files to AnyKernel3
+          cp -f kernel_files/Image.gz AnyKernel3-AOSP/ || true
+          cp -f kernel_files/dtb.img AnyKernel3-AOSP/dtb || true
+          cp -f kernel_files/dtbo.img AnyKernel3-AOSP/ || true
+          
+          # Create zip
+          cd AnyKernel3-AOSP
+          zip -q -r "${{ steps.generate-filenames.outputs.AOSP_FILENAME }}.zip" *
+          mv "${{ steps.generate-filenames.outputs.AOSP_FILENAME }}.zip" ../releases/
+
+      - name: Create MIUI/HyperOS AnyKernel3 Package
+        run: |
+          git clone --recursive --depth=1 ${{ github.event.inputs.ANYKERNEL_URL }} -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} AnyKernel3-MIUI-HyperOS
+          
+          # Copy kernel files to AnyKernel3 (excluding dtbo.img for MIUI/HyperOS)
+          cp -f kernel_files/Image.gz AnyKernel3-MIUI-HyperOS/ || true
+          cp -f kernel_files/dtb.img AnyKernel3-MIUI-HyperOS/dtb || true
+          # Do NOT copy dtbo.img for MIUI/HyperOS
+          
+          # Create zip
+          cd AnyKernel3-MIUI-HyperOS
+          zip -q -r "${{ steps.generate-filenames.outputs.MIUI_HYPEROS_FILENAME }}.zip" *
+          mv "${{ steps.generate-filenames.outputs.MIUI_HYPEROS_FILENAME }}.zip" ../releases/
+
+      - name: Create Release Notes
+        run: |
+          cat > release_notes.md << EOF
+          # N0kontzzz for Munch (${{ steps.build-info.outputs.release_tag }})
+          
+          Build Date: $(date '+%Y-%m-%d %H:%M')
+          
+          ## Features
+          - Based on ${{ github.event.inputs.KERNEL_TREE_BRANCH }}
+          $([ "${{ github.event.inputs.ADD_KERNELSU }}" == "true" ] && echo "- Includes KernelSU Next" || echo "")
+          
+          ## Files
+          - **AOSP**: For AOSP-based ROMs
+          - **MIUI/HyperOS**: For MIUI/HyperOS-based ROMs (does not include dtbo.img)
+          
+          ## Installation
+          Flash via recovery or KernelFlasher app.
+          EOF
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.build-info.outputs.release_tag }}
+          name: "N0kontzzz Munch ${{ steps.build-info.outputs.release_tag }}"
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          files: |
+            releases/${{ steps.generate-filenames.outputs.AOSP_FILENAME }}.zip
+            releases/${{ steps.generate-filenames.outputs.MIUI_HYPEROS_FILENAME }}.zip
