@@ -98,7 +98,7 @@ jobs:
       - name: Download and Extract Clang (if not cached)
         if: steps.cache-clang.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/greenforce-project/greenforce_clang/releases/download/latest/greenforce-clang-21.0.0git-23032025.tar.gz  -O clang.tar.gz
+          wget https://github.com/greenforce-project/greenforce_clang/releases/download/latest/tag/23032025/greenforce-clang-21.0.0git-23032025.tar.gz  -O clang.tar.gz
           mkdir -p clang
           tar -xf clang.tar.gz -C clang
           rm clang.tar.gz
