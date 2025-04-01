@@ -91,7 +91,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: clang
-          key: greenforce-clang-21.0.0git-23032025
+          key: greenforce-clang-21.0.0git30-30032025
           restore-keys: |
             greenforce-clang-
 
