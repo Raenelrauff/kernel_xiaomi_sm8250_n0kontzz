@@ -120,13 +120,15 @@ jobs:
           export SUBARCH=ARM64
           export KBUILD_BUILD_USER="never"
           export KBUILD_BUILD_HOST="worry"
+          export LLVM_REGALLOC_ADVISOR=0
+          export LLVM_ENABLE_REGALLOC_ADVISOR=OFF
 
           if [ ${{ github.event.inputs.ADD_KERNELSU }} == 'true' ]; then
             curl -LSs "${{ github.event.inputs.KERNELSU_SETUP_URL }}" | bash -s ${{ github.event.inputs.KERNELSU_SETUP_BRANCH }}
           fi
 
           make O=out vendor/munch_defconfig PATH="${{ steps.workspace.outputs.tools_folder }}/clang/bin:$PATH"
-          make O=out CC=clang -j$(nproc --all) PATH="${{ steps.workspace.outputs.tools_folder }}/clang/bin:$PATH" CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1
+          make O=out CC=clang -j$(nproc --all) PATH="${{ steps.workspace.outputs.tools_folder }}/clang/bin:$PATH" CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1 LLVM_REGALLOC_ADVISOR=0
         working-directory: ${{ steps.workspace.outputs.kernel_folder }}
 
       - name: Prepare kernel files for packaging
