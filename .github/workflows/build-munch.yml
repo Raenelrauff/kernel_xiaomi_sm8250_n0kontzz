@@ -54,9 +54,9 @@ jobs:
           DATE_TIME=$(date '+%Y%m%d-%H%M')
           echo "build_date=${DATE_TIME}" >> $GITHUB_OUTPUT
           
-          # Create a short date for the release tag
-          SHORT_DATE=$(date '+%Y%m%d')
-          echo "short_date=${SHORT_DATE}" >> $GITHUB_OUTPUT
+          # Create a short date with hour and minute for the release tag
+          TIME_TAG=$(date '+%Y%m%d-%H%M')
+          echo "time_tag=${TIME_TAG}" >> $GITHUB_OUTPUT
           
           # Extract version from branch name
           # This assumes branch names like "susfs-v1.5.5-munch"
@@ -70,8 +70,8 @@ jobs:
             VERSION="1.0.0"
           fi
           
-          # Create release tag
-          RELEASE_TAG="v${VERSION}-${SHORT_DATE}"
+          # Create release tag with time
+          RELEASE_TAG="v${VERSION}-${TIME_TAG}"
           echo "release_tag=${RELEASE_TAG}" >> $GITHUB_OUTPUT
           
           echo "Build date: ${DATE_TIME}"
