@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      CLANG_DOWNLOAD_LINK: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
     strategy:
       matrix:
         config:
@@ -24,7 +26,7 @@ jobs:
 
             ANYKERNEL_URL: "https://github.com/Impqxr/AKalioth"
             ANYKERNEL_BRANCH: "main"
-            ANYKERNEL_ZIP_NAME: "N0kernel-alioth-${{ github.event.release.name }}"
+            ANYKERNEL_ZIP_NAME: "N0kernel-alioth-${{ github.event.release.name }}-${{ format('{0:HHmm}', github.event.release.created_at) }}"
             ANYKERNEL_HYPEROS_DTBO: false
 
           - name: "KernelSU-Next with SuSFS"
@@ -38,7 +40,7 @@ jobs:
 
             ANYKERNEL_URL: "https://github.com/Impqxr/AKalioth"
             ANYKERNEL_BRANCH: "main"
-            ANYKERNEL_ZIP_NAME: "N0kernel-alioth-${{ github.event.release.name }}"
+            ANYKERNEL_ZIP_NAME: "N0kernel-alioth-${{ github.event.release.name }}-${{ format('{0:HHmm}', github.event.release.created_at) }}"
             ANYKERNEL_HYPEROS_DTBO: false
 
           - name: "Rissu's KernelSU Only"
@@ -52,7 +54,7 @@ jobs:
 
             ANYKERNEL_URL: "https://github.com/Impqxr/AKalioth"
             ANYKERNEL_BRANCH: "main"
-            ANYKERNEL_ZIP_NAME: "N0kernel-alioth-${{ github.event.release.name }}"
+            ANYKERNEL_ZIP_NAME: "N0kernel-alioth-${{ github.event.release.name }}-${{ format('{0:HHmm}', github.event.release.created_at) }}"
             ANYKERNEL_HYPEROS_DTBO: false
 
           - name: "Rissu's KernelSU with SuSFS"
@@ -66,7 +68,7 @@ jobs:
 
             ANYKERNEL_URL: "https://github.com/Impqxr/AKalioth"
             ANYKERNEL_BRANCH: "main"
-            ANYKERNEL_ZIP_NAME: "N0kernel-alioth-${{ github.event.release.name }}"
+            ANYKERNEL_ZIP_NAME: "N0kernel-alioth-${{ github.event.release.name }}-${{ format('{0:HHmm}', github.event.release.created_at) }}"
             ANYKERNEL_HYPEROS_DTBO: false
     steps:
       - name: Display Inputs
@@ -93,7 +95,7 @@ jobs:
       - name: Download and Extract Clang (if not cached)
         if: steps.cache-clang.outputs.cache-hit != 'true'
         run: |
-          wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz -O clang.tar.gz
+          wget "${{ env.CLANG_DOWNLOAD_LINK }}" -O clang.tar.gz
           mkdir -p clang
           tar -xf clang.tar.gz -C clang
           rm clang.tar.gz
@@ -127,12 +129,21 @@ jobs:
         working-directory: ${{ steps.workspace.outputs.kernel_folder }}
         id: build
 
+      - name: Get current timestamp
+        id: timestamp
+        run: echo "timestamp=$(date '+%H%M')" >> $GITHUB_OUTPUT
+
       - name: AnyKernel3
         if: ${{ success() }}
         run: |
           echo "KSU_VERSION is ${{ steps.build.outputs.KSU_VERSION }}, SUSFS_VERSION is ${{ steps.build.outputs.SUSFS_VERSION }}"
 
+          # Use the timestamp from the step above as fallback if GitHub context format doesn't work
           FINAL_ZIP_NAME="${{ matrix.config.ANYKERNEL_ZIP_NAME }}"
+          if [[ "$FINAL_ZIP_NAME" != *"-"*":"* ]]; then
+            # If GitHub's formatting didn't work, use our manual timestamp
+            FINAL_ZIP_NAME="${{ matrix.config.ANYKERNEL_ZIP_NAME }}-${{ steps.timestamp.outputs.timestamp }}"
+          fi
 
           if [ -n "${{ steps.build.outputs.KSU_VERSION }}" ]; then
             FINAL_ZIP_NAME="${FINAL_ZIP_NAME}-${{ matrix.config.KERNELSU_NAME }}-${{ steps.build.outputs.KSU_VERSION }}"
