@@ -95,7 +95,7 @@ jobs:
           path: clang
           key: greenforce-clang-21.0.0git-06042025
           restore-keys: |
-            greenforce-clang-
+            greenforce-clang-21.0.0git-06042025-
 
       - name: Download and Extract Clang (if not cached)
         if: steps.cache-clang.outputs.cache-hit != 'true'
