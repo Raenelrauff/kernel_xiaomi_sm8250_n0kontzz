@@ -18,7 +18,7 @@ on:
       # Custom options (used when Custom Configuration is selected)
       KERNEL_TREE:
         description: "Kernel Tree (Custom)"
-        default: "https://github.com/your-username/kernel_xiaomi_sm8250"
+        default: "https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250"
         required: false
       KERNEL_TREE_BRANCH:
         description: "Kernel Tree Branch (Custom)"
@@ -42,7 +42,7 @@ on:
         default: "next"
       ANYKERNEL_URL:
         description: "AnyKernel URL (Custom)"
-        default: "https://github.com/your-username/AKmunch"
+        default: "https://github.com/bimoalfarrabi/AKmunch"
         required: false
       ANYKERNEL_BRANCH:
         description: "AnyKernel Branch (Custom)"
