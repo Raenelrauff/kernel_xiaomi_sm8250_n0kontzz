@@ -253,12 +253,6 @@ jobs:
           # Copy kernel files to AnyKernel3
           cp -f kernel_files/Image.gz AnyKernel3-Base/ || true
           cp -f kernel_files/dtb.img AnyKernel3-Base/dtb || true
-          
-          # Update the anykernel.sh script to use N0Kontzzz instead of N0Kernel
-          if [ -f AnyKernel3-Base/anykernel.sh ]; then
-            sed -i 's/kernel.string=N0Kernel/kernel.string=N0Kontzzz/g' AnyKernel3-Base/anykernel.sh
-            sed -i 's/*N0Kernel*)/*N0Kontzzz*)/g' AnyKernel3-Base/anykernel.sh
-          fi
 
       - name: Create Variant Directories
         run: |
