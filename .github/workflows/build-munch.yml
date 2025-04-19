@@ -12,18 +12,18 @@ on:
           - "Rissu's KernelSU Only"
           - "Rissu's KernelSU with SuSFS"
           - "Custom Configuration"
-        default: "KernelSU-Next Only"
+        default: "KernelSU-Next with SuSFS"
         required: true
       
       # Custom options (used when Custom Configuration is selected)
       KERNEL_TREE:
         description: "Kernel Tree (Custom)"
-        default: "https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250"
+        default: "https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz"
         required: false
       KERNEL_TREE_BRANCH:
         description: "Kernel Tree Branch (Custom)"
         required: false
-        default: "base-munch"
+        default: "susfs-v1.5.5-munch"
       ADD_KERNELSU:
         description: "Add KernelSU (Custom)"
         type: boolean
@@ -39,7 +39,7 @@ on:
       KERNELSU_SETUP_BRANCH:
         description: "KernelSU Branch (Custom)"
         required: false
-        default: "next"
+        default: "next-susfs-dev"
       ANYKERNEL_URL:
         description: "AnyKernel URL (Custom)"
         default: "https://github.com/bimoalfarrabi/AKmunch"
