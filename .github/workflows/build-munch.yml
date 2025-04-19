@@ -82,7 +82,7 @@ jobs:
             echo "KERNELSU_NAME=KSUN" >> $GITHUB_OUTPUT
             echo "KERNELSU_SETUP_URL=https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next-susfs/kernel/setup.sh" >> $GITHUB_OUTPUT
             echo "KERNELSU_SETUP_BRANCH=next-susfs-dev" >> $GITHUB_OUTPUT
-            echo "ANYKERNEL_URL=https://github.com/bimoalfarrabi/AKmunchh" >> $GITHUB_OUTPUT
+            echo "ANYKERNEL_URL=https://github.com/bimoalfarrabi/AKmunch" >> $GITHUB_OUTPUT
             echo "ANYKERNEL_BRANCH=main" >> $GITHUB_OUTPUT
             echo "ANYKERNEL_ZIP_NAME=N0Kontzzz-munch" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "Rissu's KernelSU Only" ]; then
