@@ -67,7 +67,7 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "KernelSU-Next Only" ]; then
             echo "KERNEL_TREE=https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz" >> $GITHUB_OUTPUT
-            echo "KERNEL_TREE_BRANCH=base" >> $GITHUB_OUTPUT
+            echo "KERNEL_TREE_BRANCH=base-munch" >> $GITHUB_OUTPUT
             echo "ADD_KERNELSU=true" >> $GITHUB_OUTPUT
             echo "KERNELSU_NAME=KSUN" >> $GITHUB_OUTPUT
             echo "KERNELSU_SETUP_URL=https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next/kernel/setup.sh" >> $GITHUB_OUTPUT
@@ -77,7 +77,7 @@ jobs:
             echo "ANYKERNEL_ZIP_NAME=N0Kontzzz-munch" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "KernelSU-Next with SuSFS" ]; then
             echo "KERNEL_TREE=https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz" >> $GITHUB_OUTPUT
-            echo "KERNEL_TREE_BRANCH=susfs-v1.5.5" >> $GITHUB_OUTPUT
+            echo "KERNEL_TREE_BRANCH=susfs-v1.5.5-munch" >> $GITHUB_OUTPUT
             echo "ADD_KERNELSU=true" >> $GITHUB_OUTPUT
             echo "KERNELSU_NAME=KSUN" >> $GITHUB_OUTPUT
             echo "KERNELSU_SETUP_URL=https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next-susfs/kernel/setup.sh" >> $GITHUB_OUTPUT
@@ -87,7 +87,7 @@ jobs:
             echo "ANYKERNEL_ZIP_NAME=N0Kontzzz-munch" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "Rissu's KernelSU Only" ]; then
             echo "KERNEL_TREE=https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz" >> $GITHUB_OUTPUT
-            echo "KERNEL_TREE_BRANCH=base" >> $GITHUB_OUTPUT
+            echo "KERNEL_TREE_BRANCH=base-munch" >> $GITHUB_OUTPUT
             echo "ADD_KERNELSU=true" >> $GITHUB_OUTPUT
             echo "KERNELSU_NAME=RKSU" >> $GITHUB_OUTPUT
             echo "KERNELSU_SETUP_URL=https://raw.githubusercontent.com/rsuntk/KernelSU/refs/heads/main/kernel/setup.sh" >> $GITHUB_OUTPUT
@@ -97,7 +97,7 @@ jobs:
             echo "ANYKERNEL_ZIP_NAME=N0Kontzzz-munch" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "Rissu's KernelSU with SuSFS" ]; then
             echo "KERNEL_TREE=https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz" >> $GITHUB_OUTPUT
-            echo "KERNEL_TREE_BRANCH=susfs-v1.5.5" >> $GITHUB_OUTPUT
+            echo "KERNEL_TREE_BRANCH=susfs-v1.5.5-munch" >> $GITHUB_OUTPUT
             echo "ADD_KERNELSU=true" >> $GITHUB_OUTPUT
             echo "KERNELSU_NAME=RKSU" >> $GITHUB_OUTPUT
             echo "KERNELSU_SETUP_URL=https://raw.githubusercontent.com/rsuntk/KernelSU/refs/heads/susfs-v1.5.5/kernel/setup.sh" >> $GITHUB_OUTPUT
