@@ -60,7 +60,7 @@ jobs:
     permissions:
       contents: write
     env:
-      CLANG_DOWNLOAD_LINK: https://github.com/greenforce-project/greenforce_clang/releases/download/13042025/greenforce-clang-21.0.0git-13042025.tar.gz
+      CLANG_DOWNLOAD_LINK: https://github.com/greenforce-project/greenforce_clang/releases/download/20042025/greenforce-clang-21.0.0git-20042025.tar.gz
     steps:
       - name: Set kernel configuration
         id: kernel-config
@@ -165,9 +165,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: clang
-          key: greenforce-clang-21.0.0git-13042025
+          key: greenforce-clang-21.0.0git-20042025
           restore-keys: |
-            greenforce-clang-21.0.0git-13042025-
+            greenforce-clang-21.0.0git-20042025-
 
       - name: Download and Extract Clang (if not cached)
         if: steps.cache-clang.outputs.cache-hit != 'true'
