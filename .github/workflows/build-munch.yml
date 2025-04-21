@@ -7,12 +7,12 @@ on:
         description: "Kernel Variant"
         type: choice
         options:
+          - "No KernelSU"
           - "KernelSU-Next Only"
           - "KernelSU-Next with SuSFS"
-          - "Rissu's KernelSU Only"
-          - "Rissu's KernelSU with SuSFS"
+          - "Build All Variants"
           - "Custom Configuration"
-        default: "KernelSU-Next with SuSFS"
+        default: "Build All Variants"
         required: true
       
       # Custom options (used when Custom Configuration is selected)
@@ -54,8 +54,193 @@ on:
         required: false
 
 jobs:
-  build:
+  prepare:
     if: github.event.repository.owner.id == github.event.sender.id
+    runs-on: ubuntu-latest
+    outputs:
+      build_mode: ${{ steps.set-mode.outputs.build_mode }}
+      release_tag: ${{ steps.build-info.outputs.release_tag }}
+    steps:
+      - name: Set build mode
+        id: set-mode
+        run: |
+          if [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "Build All Variants" ]; then
+            echo "build_mode=matrix" >> $GITHUB_OUTPUT
+          else
+            echo "build_mode=single" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Generate build info
+        id: build-info
+        run: |
+          # Generate date-time stamp in format YYYYMMDD-HHMM
+          DATE_TIME=$(date '+%Y%m%d-%H%M')
+          echo "build_date=${DATE_TIME}" >> $GITHUB_OUTPUT
+          echo "release_tag=${DATE_TIME}" >> $GITHUB_OUTPUT
+          
+          echo "Build date: ${DATE_TIME}"
+          echo "Generated release tag: ${DATE_TIME}"
+
+  build-matrix:
+    needs: prepare
+    if: needs.prepare.outputs.build_mode == 'matrix'
+    strategy:
+      matrix:
+        variant:
+          - name: "No-KSU"
+            branch: "base-munch"
+            add_ksu: false
+            ksu_name: "None"
+            ksu_setup_url: "none"
+            ksu_setup_branch: "none"
+          - name: "KSUN-Only"
+            branch: "base-munch"
+            add_ksu: true
+            ksu_name: "KSUN"
+            ksu_setup_url: "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next/kernel/setup.sh"
+            ksu_setup_branch: "next"
+          - name: "KSUN-SuSFS"
+            branch: "susfs-v1.5.5-munch"
+            add_ksu: true
+            ksu_name: "KSUN"
+            ksu_setup_url: "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next-susfs/kernel/setup.sh"
+            ksu_setup_branch: "next-susfs-dev"
+    runs-on: ubuntu-latest
+    env:
+      CLANG_DOWNLOAD_LINK: https://github.com/greenforce-project/greenforce_clang/releases/download/20042025/greenforce-clang-21.0.0git-20042025.tar.gz
+    steps:
+      - name: Cache Clang
+        id: cache-clang
+        uses: actions/cache@v4
+        with:
+          path: clang
+          key: greenforce-clang-21.0.0git-20042025
+          restore-keys: |
+            greenforce-clang-21.0.0git-20042025-
+
+      - name: Download and Extract Clang (if not cached)
+        if: steps.cache-clang.outputs.cache-hit != 'true'
+        run: |
+          wget "${{ env.CLANG_DOWNLOAD_LINK }}" -O clang.tar.gz
+          mkdir -p clang
+          tar -xf clang.tar.gz -C clang
+          rm clang.tar.gz
+
+      - name: Initialize workspace
+        run: |
+          echo "tools_folder=$(pwd)" >> $GITHUB_OUTPUT
+          sudo apt install flex libncurses6 -y
+          git clone --depth=1 https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz -b ${{ matrix.variant.branch }} kernel_tree
+          echo "kernel_folder=$(pwd)/kernel_tree" >> $GITHUB_OUTPUT
+          
+          # Create releases directory
+          mkdir -p releases
+        id: workspace
+
+      - name: Building kernel
+        run: |
+          export ARCH=arm64
+          export SUBARCH=ARM64
+          export KBUILD_BUILD_USER="never"
+          export KBUILD_BUILD_HOST="worry"
+          
+          if [ ${{ matrix.variant.add_ksu }} == 'true' ]; then
+            curl -LSs "${{ matrix.variant.ksu_setup_url }}" | bash -s ${{ matrix.variant.ksu_setup_branch }}
+          fi
+
+          make O=out vendor/munch_defconfig PATH="${{ steps.workspace.outputs.tools_folder }}/clang/bin:$PATH"
+          make O=out CC=clang -j$(nproc --all) PATH="${{ steps.workspace.outputs.tools_folder }}/clang/bin:$PATH" CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 LLVM_IAS=1
+        working-directory: ${{ steps.workspace.outputs.kernel_folder }}
+
+      - name: Prepare kernel files for packaging
+        run: |
+          # Create a directory to store build artifacts
+          mkdir -p kernel_files
+          
+          # Copy all required files
+          if [ -e "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/Image.gz" ]; then
+            cp "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/Image.gz" kernel_files/
+          fi
+          
+          if [ -e "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/dtb.img" ]; then
+            cp "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/dtb.img" kernel_files/
+          fi
+          
+          if [ -e "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/dtbo.img" ]; then
+            cp "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/dtbo.img" kernel_files/
+          fi
+
+      - name: Clone DTBO Repository
+        run: |
+          # Clone the AKMunch repository to get DTBO variants
+          git clone --depth=1 https://github.com/bimoalfarrabi/AKmunch -b main dtbo-source || true
+          
+          # Create variant directories for different DTBOs
+          mkdir -p miui ir default
+          
+          # Copy the original DTBO to default
+          cp -f kernel_files/dtbo.img default/ || true
+          
+          # Copy variant DTBOs from repository if available
+          cp -f dtbo-source/miui/dtbo.img miui/ || cp -f kernel_files/dtbo.img miui/ || true
+          cp -f dtbo-source/ir/dtbo.img ir/ || cp -f kernel_files/dtbo.img ir/ || true
+
+      - name: Generate filename
+        id: generate-filename
+        run: |
+          # Base name with variant suffix
+          BASE_NAME="N0Kontzzz-munch"
+          
+          if [ "${{ matrix.variant.add_ksu }}" == 'true' ]; then
+            BASE_NAME="${BASE_NAME}-${{ matrix.variant.ksu_name }}"
+          fi
+          
+          # Add SuSFS to name if using SuSFS branch
+          if [[ "${{ matrix.variant.branch }}" == *"susfs"* ]]; then
+            BASE_NAME="${BASE_NAME}-SuSFS"
+          fi
+          
+          # Add date-time
+          FILENAME="${BASE_NAME}-${{ needs.prepare.outputs.release_tag }}"
+          
+          echo "FILENAME=${FILENAME}" >> $GITHUB_OUTPUT
+          echo "Generated filename: ${FILENAME}"
+
+      - name: Package Unified Kernel
+        run: |
+          # Clone AnyKernel repository
+          git clone --recursive --depth=1 https://github.com/bimoalfarrabi/AKmunch -b main AnyKernel3
+          
+          # Copy kernel files to AnyKernel3
+          cp -f kernel_files/Image.gz AnyKernel3/ || true
+          cp -f kernel_files/dtb.img AnyKernel3/dtb || true
+          
+          # Copy the default DTBO to root
+          cp -f default/dtbo.img AnyKernel3/dtbo.img || true
+          
+          # Create variant directories and copy DTBOs
+          mkdir -p AnyKernel3/miui
+          mkdir -p AnyKernel3/ir
+          cp -f miui/dtbo.img AnyKernel3/miui/dtbo.img || true
+          cp -f ir/dtbo.img AnyKernel3/ir/dtbo.img || true
+          
+          # Create zip
+          cd AnyKernel3
+          zip -q -r "${FILENAME}.zip" *
+          mv "${FILENAME}.zip" ../releases/
+        env:
+          FILENAME: ${{ steps.generate-filename.outputs.FILENAME }}
+
+      - name: Upload Kernel Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.generate-filename.outputs.FILENAME }}
+          path: releases/${{ steps.generate-filename.outputs.FILENAME }}.zip
+          retention-days: 1
+
+  build-single:
+    needs: prepare
+    if: needs.prepare.outputs.build_mode == 'single'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -65,7 +250,17 @@ jobs:
       - name: Set kernel configuration
         id: kernel-config
         run: |
-          if [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "KernelSU-Next Only" ]; then
+          if [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "No KernelSU" ]; then
+            echo "KERNEL_TREE=https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz" >> $GITHUB_OUTPUT
+            echo "KERNEL_TREE_BRANCH=base-munch" >> $GITHUB_OUTPUT
+            echo "ADD_KERNELSU=false" >> $GITHUB_OUTPUT
+            echo "KERNELSU_NAME=None" >> $GITHUB_OUTPUT
+            echo "KERNELSU_SETUP_URL=none" >> $GITHUB_OUTPUT
+            echo "KERNELSU_SETUP_BRANCH=none" >> $GITHUB_OUTPUT
+            echo "ANYKERNEL_URL=https://github.com/bimoalfarrabi/AKmunch" >> $GITHUB_OUTPUT
+            echo "ANYKERNEL_BRANCH=main" >> $GITHUB_OUTPUT
+            echo "ANYKERNEL_ZIP_NAME=N0Kontzzz-munch" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "KernelSU-Next Only" ]; then
             echo "KERNEL_TREE=https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz" >> $GITHUB_OUTPUT
             echo "KERNEL_TREE_BRANCH=base-munch" >> $GITHUB_OUTPUT
             echo "ADD_KERNELSU=true" >> $GITHUB_OUTPUT
@@ -85,26 +280,6 @@ jobs:
             echo "ANYKERNEL_URL=https://github.com/bimoalfarrabi/AKmunch" >> $GITHUB_OUTPUT
             echo "ANYKERNEL_BRANCH=main" >> $GITHUB_OUTPUT
             echo "ANYKERNEL_ZIP_NAME=N0Kontzzz-munch" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "Rissu's KernelSU Only" ]; then
-            echo "KERNEL_TREE=https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz" >> $GITHUB_OUTPUT
-            echo "KERNEL_TREE_BRANCH=base-munch" >> $GITHUB_OUTPUT
-            echo "ADD_KERNELSU=true" >> $GITHUB_OUTPUT
-            echo "KERNELSU_NAME=RKSU" >> $GITHUB_OUTPUT
-            echo "KERNELSU_SETUP_URL=https://raw.githubusercontent.com/rsuntk/KernelSU/refs/heads/main/kernel/setup.sh" >> $GITHUB_OUTPUT
-            echo "KERNELSU_SETUP_BRANCH=main" >> $GITHUB_OUTPUT
-            echo "ANYKERNEL_URL=https://github.com/bimoalfarrabi/AKmunch" >> $GITHUB_OUTPUT
-            echo "ANYKERNEL_BRANCH=main" >> $GITHUB_OUTPUT
-            echo "ANYKERNEL_ZIP_NAME=N0Kontzzz-munch" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "Rissu's KernelSU with SuSFS" ]; then
-            echo "KERNEL_TREE=https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz" >> $GITHUB_OUTPUT
-            echo "KERNEL_TREE_BRANCH=susfs-v1.5.5-munch" >> $GITHUB_OUTPUT
-            echo "ADD_KERNELSU=true" >> $GITHUB_OUTPUT
-            echo "KERNELSU_NAME=RKSU" >> $GITHUB_OUTPUT
-            echo "KERNELSU_SETUP_URL=https://raw.githubusercontent.com/rsuntk/KernelSU/refs/heads/susfs-v1.5.5/kernel/setup.sh" >> $GITHUB_OUTPUT
-            echo "KERNELSU_SETUP_BRANCH=susfs-v1.5.5" >> $GITHUB_OUTPUT
-            echo "ANYKERNEL_URL=https://github.com/bimoalfarrabi/AKmunch" >> $GITHUB_OUTPUT
-            echo "ANYKERNEL_BRANCH=main" >> $GITHUB_OUTPUT
-            echo "ANYKERNEL_ZIP_NAME=N0Kontzzz-munch" >> $GITHUB_OUTPUT
           else
             # Custom configuration
             echo "KERNEL_TREE=${{ github.event.inputs.KERNEL_TREE }}" >> $GITHUB_OUTPUT
@@ -118,35 +293,6 @@ jobs:
             echo "ANYKERNEL_ZIP_NAME=${{ github.event.inputs.ANYKERNEL_ZIP_NAME }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Generate build info
-        id: build-info
-        run: |
-          # Generate date-time stamp
-          DATE_TIME=$(date '+%Y%m%d-%H%M')
-          echo "build_date=${DATE_TIME}" >> $GITHUB_OUTPUT
-          
-          # Create a short date with hour and minute for the release tag
-          TIME_TAG=$(date '+%Y%m%d-%H%M')
-          echo "time_tag=${TIME_TAG}" >> $GITHUB_OUTPUT
-          
-          # Extract version from branch name
-          BRANCH_NAME="${{ steps.kernel-config.outputs.KERNEL_TREE_BRANCH }}"
-          
-          # Try to extract version with regex
-          if [[ $BRANCH_NAME =~ v([0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-          else
-            # If no version found in branch name, use default
-            VERSION="1.0.0"
-          fi
-          
-          # Create release tag with time
-          RELEASE_TAG="v${VERSION}-${TIME_TAG}"
-          echo "release_tag=${RELEASE_TAG}" >> $GITHUB_OUTPUT
-          
-          echo "Build date: ${DATE_TIME}"
-          echo "Generated release tag: ${RELEASE_TAG}"
-
       - name: Display Configuration
         run: |
           echo "::group::Configuration"
@@ -157,7 +303,7 @@ jobs:
           echo "KernelSU Setup URL: ${{ steps.kernel-config.outputs.KERNELSU_SETUP_URL }}"
           echo "KernelSU Branch: ${{ steps.kernel-config.outputs.KERNELSU_SETUP_BRANCH }}"
           echo "AnyKernel URL: ${{ steps.kernel-config.outputs.ANYKERNEL_URL }}/tree/${{ steps.kernel-config.outputs.ANYKERNEL_BRANCH }}"
-          echo "Generated Release Tag: ${{ steps.build-info.outputs.release_tag }}"
+          echo "Generated Release Tag: ${{ needs.prepare.outputs.release_tag }}"
           echo "::endgroup::"
 
       - name: Cache Clang
@@ -194,8 +340,8 @@ jobs:
           export SUBARCH=ARM64
           export KBUILD_BUILD_USER="never"
           export KBUILD_BUILD_HOST="worry"
-
-          if [ ${{ steps.kernel-config.outputs.ADD_KERNELSU }} == 'true' ]; then
+          
+          if [ "${{ steps.kernel-config.outputs.ADD_KERNELSU }}" == 'true' ]; then
             curl -LSs "${{ steps.kernel-config.outputs.KERNELSU_SETUP_URL }}" | bash -s ${{ steps.kernel-config.outputs.KERNELSU_SETUP_BRANCH }}
           fi
 
@@ -221,8 +367,8 @@ jobs:
             cp "${{ steps.workspace.outputs.kernel_folder }}/out/arch/arm64/boot/dtbo.img" kernel_files/
           fi
 
-      - name: Generate filenames
-        id: generate-filenames
+      - name: Generate filename
+        id: generate-filename
         run: |
           # Base name with KSU suffix if enabled
           BASE_NAME="${{ steps.kernel-config.outputs.ANYKERNEL_ZIP_NAME }}"
@@ -231,137 +377,133 @@ jobs:
             BASE_NAME="${BASE_NAME}-${{ steps.kernel-config.outputs.KERNELSU_NAME }}"
           fi
           
-          # Generate filenames for different variants
-          DEFAULT_NAME="${BASE_NAME}-${{ steps.build-info.outputs.build_date }}"
-          MIUI_NAME="${BASE_NAME}-miui-${{ steps.build-info.outputs.build_date }}"
-          IR_NAME="${BASE_NAME}-ir-${{ steps.build-info.outputs.build_date }}"
+          # Add SuSFS to name if using SuSFS branch
+          if [[ "${{ steps.kernel-config.outputs.KERNEL_TREE_BRANCH }}" == *"susfs"* ]]; then
+            BASE_NAME="${BASE_NAME}-SuSFS"
+          fi
           
-          echo "DEFAULT_FILENAME=${DEFAULT_NAME}" >> $GITHUB_OUTPUT
-          echo "MIUI_FILENAME=${MIUI_NAME}" >> $GITHUB_OUTPUT
-          echo "IR_FILENAME=${IR_NAME}" >> $GITHUB_OUTPUT
+          # Generate filename for unified package
+          FILENAME="${BASE_NAME}-${{ needs.prepare.outputs.release_tag }}"
           
-          echo "Generated filenames:"
-          echo "Default: ${DEFAULT_NAME}"
-          echo "MIUI: ${MIUI_NAME}"
-          echo "IR: ${IR_NAME}"
+          echo "FILENAME=${FILENAME}" >> $GITHUB_OUTPUT
+          
+          echo "Generated filename: ${FILENAME}"
 
-      - name: Create AnyKernel3 Base
+      - name: Clone DTBO Repository
         run: |
-          # Clone AnyKernel repository
-          git clone --recursive --depth=1 ${{ steps.kernel-config.outputs.ANYKERNEL_URL }} -b ${{ steps.kernel-config.outputs.ANYKERNEL_BRANCH }} AnyKernel3-Base
+          # Clone the AKMunch repository to get DTBO variants
+          git clone --depth=1 https://github.com/bimoalfarrabi/AKmunch -b main dtbo-source || true
           
-          # Copy kernel files to AnyKernel3
-          cp -f kernel_files/Image.gz AnyKernel3-Base/ || true
-          cp -f kernel_files/dtb.img AnyKernel3-Base/dtb || true
-
-      - name: Create Variant Directories
-        run: |
           # Create variant directories for different DTBOs
           mkdir -p miui ir default
           
           # Copy the original DTBO to default
           cp -f kernel_files/dtbo.img default/ || true
           
-          # For demo purposes, we're using the same DTBO for all variants
-          # In a real implementation, you would create different DTBOs for each variant
-          # This is just to demonstrate the structure
-          cp -f kernel_files/dtbo.img miui/ || true
-          cp -f kernel_files/dtbo.img ir/ || true
+          # Copy variant DTBOs from repository if available
+          cp -f dtbo-source/miui/dtbo.img miui/ || cp -f kernel_files/dtbo.img miui/ || true
+          cp -f dtbo-source/ir/dtbo.img ir/ || cp -f kernel_files/dtbo.img ir/ || true
 
-      - name: Package Default Variant
+      - name: Package Unified Kernel
         run: |
-          # Copy the base AnyKernel directory
-          cp -R AnyKernel3-Base AnyKernel3-Default
+          # Clone AnyKernel repository
+          git clone --recursive --depth=1 ${{ steps.kernel-config.outputs.ANYKERNEL_URL }} -b ${{ steps.kernel-config.outputs.ANYKERNEL_BRANCH }} AnyKernel3-Unified
           
-          # Copy the default DTBO
-          cp -f default/dtbo.img AnyKernel3-Default/
+          # Copy kernel files to AnyKernel3
+          cp -f kernel_files/Image.gz AnyKernel3-Unified/ || true
+          cp -f kernel_files/dtb.img AnyKernel3-Unified/dtb || true
+          
+          # Copy the default DTBO to root
+          cp -f default/dtbo.img AnyKernel3-Unified/dtbo.img || true
+          
+          # Create variant directories
+          mkdir -p AnyKernel3-Unified/miui
+          mkdir -p AnyKernel3-Unified/ir
+          
+          # Copy variant DTBOs to their respective directories
+          cp -f miui/dtbo.img AnyKernel3-Unified/miui/dtbo.img || true
+          cp -f ir/dtbo.img AnyKernel3-Unified/ir/dtbo.img || true
           
           # Create zip
-          cd AnyKernel3-Default
-          zip -q -r "${{ steps.generate-filenames.outputs.DEFAULT_FILENAME }}.zip" *
-          mv "${{ steps.generate-filenames.outputs.DEFAULT_FILENAME }}.zip" ../releases/
+          cd AnyKernel3-Unified
+          zip -q -r "${{ steps.generate-filename.outputs.FILENAME }}.zip" *
+          mv "${{ steps.generate-filename.outputs.FILENAME }}.zip" ../releases/
 
-      - name: Package MIUI Variant
-        run: |
-          # Copy the base AnyKernel directory
-          cp -R AnyKernel3-Base AnyKernel3-MIUI
-          
-          # Create MIUI variant structure
-          mkdir -p AnyKernel3-MIUI/miui
-          cp -f miui/dtbo.img AnyKernel3-MIUI/miui/
-          
-          # Copy default DTBO to root for compatibility with older versions
-          cp -f default/dtbo.img AnyKernel3-MIUI/
-          
-          # Create zip
-          cd AnyKernel3-MIUI
-          zip -q -r "${{ steps.generate-filenames.outputs.MIUI_FILENAME }}.zip" *
-          mv "${{ steps.generate-filenames.outputs.MIUI_FILENAME }}.zip" ../releases/
+      - name: Upload Kernel Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.generate-filename.outputs.FILENAME }}
+          path: releases/${{ steps.generate-filename.outputs.FILENAME }}.zip
+          retention-days: 1
 
-      - name: Package IR Variant
-        run: |
-          # Copy the base AnyKernel directory
-          cp -R AnyKernel3-Base AnyKernel3-IR
-          
-          # Create IR variant structure
-          mkdir -p AnyKernel3-IR/ir
-          cp -f ir/dtbo.img AnyKernel3-IR/ir/
-          
-          # Copy default DTBO to root for compatibility with older versions
-          cp -f default/dtbo.img AnyKernel3-IR/
-          
-          # Create zip
-          cd AnyKernel3-IR
-          zip -q -r "${{ steps.generate-filenames.outputs.IR_FILENAME }}.zip" *
-          mv "${{ steps.generate-filenames.outputs.IR_FILENAME }}.zip" ../releases/
+  create-release:
+    needs: [prepare, build-matrix, build-single]
+    if: always() && (needs.prepare.outputs.build_mode == 'matrix' && needs.build-matrix.result == 'success') || (needs.prepare.outputs.build_mode == 'single' && needs.build-single.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download All Kernel Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: kernels
 
       - name: Create Release Notes
         run: |
-          # Get kernel variant description
-          KERNEL_VARIANT_DESC=""
-          KERNEL_BRANCH="${{ steps.kernel-config.outputs.KERNEL_TREE_BRANCH }}"
-          KSU_TYPE="${{ steps.kernel-config.outputs.KERNELSU_NAME }}"
+          BUILD_MODE="${{ needs.prepare.outputs.build_mode }}"
           
-          if [[ "$KERNEL_BRANCH" == *"susfs"* ]]; then
-            KERNEL_VARIANT_DESC="with SuSFS"
+          if [ "$BUILD_MODE" = "matrix" ]; then
+            VARIANTS_TEXT="This release includes the following kernel variants:
+          
+          - **No KernelSU**: Standard kernel without KernelSU
+          - **KernelSU-Next**: Kernel with KernelSU-Next integration
+          - **KernelSU-Next with SuSFS**: Kernel with KernelSU-Next and SuSFS file system support"
           else
-            KERNEL_VARIANT_DESC="standard"
+            VARIANTS_TEXT="This release includes the selected kernel variant."
           fi
           
           cat > release_notes.md << EOF
-          # N0Kontzzz for Munch (${{ steps.build-info.outputs.release_tag }})
+          # N0Kontzzz for Munch (${{ needs.prepare.outputs.release_tag }})
           
           Build Date: $(date '+%Y-%m-%d %H:%M')
           
-          ## Features
-          - Based on ${{ steps.kernel-config.outputs.KERNEL_TREE_BRANCH }} ($KERNEL_VARIANT_DESC)
-          $([ "${{ steps.kernel-config.outputs.ADD_KERNELSU }}" == "true" ] && echo "- Includes ${KSU_TYPE}" || echo "")
+          ## Kernel Variants
+          ${VARIANTS_TEXT}
           
           ## DTBO Variants
-          This kernel comes with multiple DTBO variants:
+          Each kernel includes all DTBO variants in a single package:
           
-          - **Default**: Standard configuration, selected automatically if no variant is specified
-          - **MIUI (-miui)**: For MIUI/HyperOS ROMs, uses MIUI IR-BLASTER implementation
-          - **IR (-ir)**: IR Blaster (Mi Remote) implementation from LineageOS for custom ROMs
+          - **Default**: Standard configuration (no suffix needed)
+          - **MIUI**: Add "-miui" suffix to zip filename when flashing on MIUI/HyperOS ROMs
+          - **IR**: Add "-ir" suffix to zip filename for IR Blaster support on custom ROMs
           
           ## Installation
           Flash via recovery or KernelFlasher app.
           
           ### Variant Selection
-          To select a specific variant, simply flash the appropriately named ZIP file.
+          To select a specific DTBO variant, rename the zip file before flashing:
+          - For MIUI/HyperOS: Add "-miui" suffix (e.g., N0Kontzzz-munch-KSUN-20250421-1234-miui.zip)
+          - For IR Blaster on custom ROMs: Add "-ir" suffix (e.g., N0Kontzzz-munch-KSUN-20250421-1234-ir.zip)
+          - For default: No suffix needed (e.g., N0Kontzzz-munch-KSUN-20250421-1234.zip)
+          
           If using ADB sideload, you'll be prompted to select using volume buttons.
+          
+          ## Credits
+          - **EmanuelCN**: N0Kernel development
+          - **rifsxd**: KernelSU-Next
+          - **simonpunk**: SUSFS
+          - **Impqxr**: N0Kernel fork & help
+          - **osm0sis**: AnyKernel3 framework
+          - **greenforce-project**: Clang compiler
+          - **All testers and contributors**: For their valuable feedback and support
           EOF
 
       - name: Create GitHub Release
-        id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.build-info.outputs.release_tag }}
-          name: "N0Kontzzz Munch ${{ steps.build-info.outputs.release_tag }}"
+          tag_name: ${{ needs.prepare.outputs.release_tag }}
+          name: "N0Kontzzz Munch ${{ needs.prepare.outputs.release_tag }}"
           body_path: release_notes.md
           draft: false
           prerelease: false
-          files: |
-            releases/${{ steps.generate-filenames.outputs.DEFAULT_FILENAME }}.zip
-            releases/${{ steps.generate-filenames.outputs.MIUI_FILENAME }}.zip
-            releases/${{ steps.generate-filenames.outputs.IR_FILENAME }}.zip
+          files: kernels/**/*.zip
