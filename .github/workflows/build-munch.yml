@@ -108,6 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CLANG_DOWNLOAD_LINK: https://github.com/greenforce-project/greenforce_clang/releases/download/20042025/greenforce-clang-21.0.0git-20042025.tar.gz
+      KERNEL_REPO_URL: https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz
       DTBO_REPO_URL: https://github.com/bimoalfarrabi/AKmunch
       DTBO_REPO_BRANCH: main
     steps:
@@ -132,7 +133,7 @@ jobs:
         run: |
           echo "tools_folder=$(pwd)" >> $GITHUB_OUTPUT
           sudo apt install flex libncurses6 -y
-          git clone --depth=1 https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz -b ${{ matrix.variant.branch }} kernel_tree
+          git clone --depth=1 ${KERNEL_REPO_URL} -b ${{ matrix.variant.branch }} kernel_tree
           echo "kernel_folder=$(pwd)/kernel_tree" >> $GITHUB_OUTPUT
           
           # Create releases directory
@@ -248,12 +249,15 @@ jobs:
       contents: write
     env:
       CLANG_DOWNLOAD_LINK: https://github.com/greenforce-project/greenforce_clang/releases/download/20042025/greenforce-clang-21.0.0git-20042025.tar.gz
+      KERNEL_REPO_URL: https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz
+      DTBO_REPO_URL: https://github.com/bimoalfarrabi/AKmunch
+      DTBO_REPO_BRANCH: main
     steps:
       - name: Set kernel configuration
         id: kernel-config
         run: |
           if [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "No KernelSU" ]; then
-            echo "KERNEL_TREE=https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz" >> $GITHUB_OUTPUT
+            echo "KERNEL_TREE=$KERNEL_REPO_URL" >> $GITHUB_OUTPUT
             echo "KERNEL_TREE_BRANCH=base-munch" >> $GITHUB_OUTPUT
             echo "ADD_KERNELSU=false" >> $GITHUB_OUTPUT
             echo "KERNELSU_NAME=None" >> $GITHUB_OUTPUT
@@ -263,7 +267,7 @@ jobs:
             echo "ANYKERNEL_BRANCH=main" >> $GITHUB_OUTPUT
             echo "ANYKERNEL_ZIP_NAME=N0Kontzzz-munch" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "KernelSU-Next Only" ]; then
-            echo "KERNEL_TREE=https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz" >> $GITHUB_OUTPUT
+            echo "KERNEL_TREE=$KERNEL_REPO_URL" >> $GITHUB_OUTPUT
             echo "KERNEL_TREE_BRANCH=base-munch" >> $GITHUB_OUTPUT
             echo "ADD_KERNELSU=true" >> $GITHUB_OUTPUT
             echo "KERNELSU_NAME=KSUN" >> $GITHUB_OUTPUT
@@ -273,7 +277,7 @@ jobs:
             echo "ANYKERNEL_BRANCH=main" >> $GITHUB_OUTPUT
             echo "ANYKERNEL_ZIP_NAME=N0Kontzzz-munch" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "KernelSU-Next with SuSFS" ]; then
-            echo "KERNEL_TREE=https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz" >> $GITHUB_OUTPUT
+            echo "KERNEL_TREE=$KERNEL_REPO_URL" >> $GITHUB_OUTPUT
             echo "KERNEL_TREE_BRANCH=susfs-v1.5.5-munch" >> $GITHUB_OUTPUT
             echo "ADD_KERNELSU=true" >> $GITHUB_OUTPUT
             echo "KERNELSU_NAME=KSUN" >> $GITHUB_OUTPUT
@@ -394,7 +398,7 @@ jobs:
       - name: Clone DTBO Repository
         run: |
           # Clone the AKMunch repository to get DTBO variants
-          git clone --depth=1 https://github.com/bimoalfarrabi/AKmunch -b main dtbo-source || true
+          git clone --depth=1 ${DTBO_REPO_URL} -b ${DTBO_REPO_BRANCH} dtbo-source || true
           
           # Create variant directories for different DTBOs
           mkdir -p miui ir default
