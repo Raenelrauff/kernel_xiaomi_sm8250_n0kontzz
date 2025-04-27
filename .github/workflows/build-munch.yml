@@ -107,7 +107,7 @@ jobs:
             ksu_setup_branch: "next-susfs-dev"
     runs-on: ubuntu-latest
     env:
-      CLANG_DOWNLOAD_LINK: https://github.com/greenforce-project/greenforce_clang/releases/download/20042025/greenforce-clang-21.0.0git-20042025.tar.gz
+      CLANG_DOWNLOAD_LINK: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
       KERNEL_REPO_URL: https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz
       DTBO_REPO_URL: https://github.com/bimoalfarrabi/AKmunch
       DTBO_REPO_BRANCH: main
@@ -117,9 +117,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: clang
-          key: greenforce-clang-21.0.0git-20042025
+          key: google-clang
           restore-keys: |
-            greenforce-clang-21.0.0git-20042025-
+            google-clang-
 
       - name: Download and Extract Clang (if not cached)
         if: steps.cache-clang.outputs.cache-hit != 'true'
@@ -248,7 +248,7 @@ jobs:
     permissions:
       contents: write
     env:
-      CLANG_DOWNLOAD_LINK: https://github.com/greenforce-project/greenforce_clang/releases/download/20042025/greenforce-clang-21.0.0git-20042025.tar.gz
+      CLANG_DOWNLOAD_LINK: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
       KERNEL_REPO_URL: https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz
       DTBO_REPO_URL: https://github.com/bimoalfarrabi/AKmunch
       DTBO_REPO_BRANCH: main
@@ -317,9 +317,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: clang
-          key: greenforce-clang-21.0.0git-20042025
+          key: google-clang
           restore-keys: |
-            greenforce-clang-21.0.0git-20042025-
+            google-clang-
 
       - name: Download and Extract Clang (if not cached)
         if: steps.cache-clang.outputs.cache-hit != 'true'
@@ -512,7 +512,7 @@ jobs:
           - **simonpunk**: SUSFS
           - **Impqxr**: N0Kernel fork & help
           - **osm0sis**: AnyKernel3 framework
-          - **greenforce-project**: Clang compiler
+          - **Google**: Clang compiler
           - **All testers and contributors**: For their valuable feedback and support
           EOF
 
