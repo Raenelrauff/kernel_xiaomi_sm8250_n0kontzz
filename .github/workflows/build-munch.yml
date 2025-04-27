@@ -127,12 +127,18 @@ jobs:
           wget "${{ env.CLANG_DOWNLOAD_LINK }}" -O clang.tar.gz
           mkdir -p clang
           tar -xf clang.tar.gz -C clang
+
+          cd clang
+          if [ -d clang-* ]; then
+            mv clang-*/* .
+          fi
+          cd ..
+          
           rm clang.tar.gz
 
       - name: Initialize workspace
         run: |
           echo "tools_folder=$(pwd)" >> $GITHUB_OUTPUT
-          sudo apt install flex libncurses6 -y
           git clone --depth=1 ${KERNEL_REPO_URL} -b ${{ matrix.variant.branch }} kernel_tree
           echo "kernel_folder=$(pwd)/kernel_tree" >> $GITHUB_OUTPUT
           
@@ -144,8 +150,8 @@ jobs:
         run: |
           export ARCH=arm64
           export SUBARCH=ARM64
-          export KBUILD_BUILD_USER="never"
-          export KBUILD_BUILD_HOST="worry"
+          export KBUILD_BUILD_USER="${{ github.actor }}"
+          export KBUILD_BUILD_HOST="GitHub"
           
           if [ ${{ matrix.variant.add_ksu }} == 'true' ]; then
             curl -LSs "${{ matrix.variant.ksu_setup_url }}" | bash -s ${{ matrix.variant.ksu_setup_branch }}
@@ -327,12 +333,18 @@ jobs:
           wget "${{ env.CLANG_DOWNLOAD_LINK }}" -O clang.tar.gz
           mkdir -p clang
           tar -xf clang.tar.gz -C clang
+
+          cd clang
+          if [ -d clang-* ]; then
+            mv clang-*/* .
+          fi
+          cd ..
+
           rm clang.tar.gz
 
       - name: Initialize workspace
         run: |
           echo "tools_folder=$(pwd)" >> $GITHUB_OUTPUT
-          sudo apt install flex libncurses6 -y
           git clone --depth=1 ${{ steps.kernel-config.outputs.KERNEL_TREE }} -b ${{ steps.kernel-config.outputs.KERNEL_TREE_BRANCH }} kernel_tree
           echo "kernel_folder=$(pwd)/kernel_tree" >> $GITHUB_OUTPUT
           
@@ -344,8 +356,8 @@ jobs:
         run: |
           export ARCH=arm64
           export SUBARCH=ARM64
-          export KBUILD_BUILD_USER="never"
-          export KBUILD_BUILD_HOST="worry"
+          export KBUILD_BUILD_USER="${{ github.actor }}"
+          export KBUILD_BUILD_HOST="GitHub"
           
           if [ "${{ steps.kernel-config.outputs.ADD_KERNELSU }}" == 'true' ]; then
             curl -LSs "${{ steps.kernel-config.outputs.KERNELSU_SETUP_URL }}" | bash -s ${{ steps.kernel-config.outputs.KERNELSU_SETUP_BRANCH }}
