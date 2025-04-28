@@ -524,7 +524,7 @@ jobs:
           - **simonpunk**: SUSFS
           - **Impqxr**: N0Kernel fork & help
           - **osm0sis**: AnyKernel3 framework
-          - **AOSP**: Clang compiler
+          - **Google**: Clang compiler
           - **All testers and contributors**: For their valuable feedback and support
           EOF
 
