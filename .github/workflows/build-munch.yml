@@ -107,7 +107,7 @@ jobs:
             ksu_setup_branch: "next-susfs-dev"
     runs-on: ubuntu-latest
     env:
-      CLANG_DOWNLOAD_LINK: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
+      CLANG_DOWNLOAD_LINK: https://github.com/Impqxr/aosp_clang_ci/releases/download/13289611/clang-13289611-linux-x86.tar.xz
       KERNEL_REPO_URL: https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz
       DTBO_REPO_URL: https://github.com/bimoalfarrabi/AKmunch
       DTBO_REPO_BRANCH: main
@@ -117,16 +117,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: clang
-          key: google-clang
+          key: aosp-clang-21
           restore-keys: |
-            google-clang-
+            aosp-clang-21-
 
       - name: Download and Extract Clang (if not cached)
         if: steps.cache-clang.outputs.cache-hit != 'true'
         run: |
-          wget "${{ env.CLANG_DOWNLOAD_LINK }}" -O clang.tar.gz
+          wget "${{ env.CLANG_DOWNLOAD_LINK }}" -O clang.tar.xz
           mkdir -p clang
-          tar -xf clang.tar.gz -C clang
+          tar -xf clang.tar.xz -C clang
 
           cd clang
           if [ -d clang-* ]; then
@@ -134,7 +134,7 @@ jobs:
           fi
           cd ..
           
-          rm clang.tar.gz
+          rm clang.tar.xz
 
       - name: Initialize workspace
         run: |
@@ -254,7 +254,7 @@ jobs:
     permissions:
       contents: write
     env:
-      CLANG_DOWNLOAD_LINK: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
+      CLANG_DOWNLOAD_LINK: https://github.com/Impqxr/aosp_clang_ci/releases/download/13289611/clang-13289611-linux-x86.tar.xz
       KERNEL_REPO_URL: https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz
       DTBO_REPO_URL: https://github.com/bimoalfarrabi/AKmunch
       DTBO_REPO_BRANCH: main
@@ -323,16 +323,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: clang
-          key: google-clang
+          key: aosp-clang-21
           restore-keys: |
-            google-clang-
+            aosp-clang-21-
 
       - name: Download and Extract Clang (if not cached)
         if: steps.cache-clang.outputs.cache-hit != 'true'
         run: |
-          wget "${{ env.CLANG_DOWNLOAD_LINK }}" -O clang.tar.gz
+          wget "${{ env.CLANG_DOWNLOAD_LINK }}" -O clang.tar.xz
           mkdir -p clang
-          tar -xf clang.tar.gz -C clang
+          tar -xf clang.tar.xz -C clang
 
           cd clang
           if [ -d clang-* ]; then
@@ -340,7 +340,7 @@ jobs:
           fi
           cd ..
 
-          rm clang.tar.gz
+          rm clang.tar.xz
 
       - name: Initialize workspace
         run: |
