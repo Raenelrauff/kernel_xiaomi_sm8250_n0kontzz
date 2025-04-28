@@ -513,8 +513,8 @@ jobs:
           ### Variant Selection
           To select a specific DTBO variant, rename the zip file before flashing:
           - For MIUI/HyperOS: Add "-miui" suffix (e.g., N0Kontzzz-munch-KSUN-20250421-1234-miui.zip)
-          - For LineageOS IR Blaster: Add "-ir" suffix (e.g., N0Kontzzz-munch-KSUN-20250421-1234-ir.zip)
-          - For default: No suffix needed (e.g., N0Kontzzz-munch-KSUN-20250421-1234.zip)
+          - For AOSP with LineageOS IR Blaster: Add "-ir" suffix (e.g., N0Kontzzz-munch-KSUN-20250421-1234-ir.zip)
+          - For default (AOSP without LineageOS IR Blaster): No suffix needed (e.g., N0Kontzzz-munch-KSUN-20250421-1234.zip)
 
           If using ADB sideload, you'll be prompted to select using volume buttons.
           
