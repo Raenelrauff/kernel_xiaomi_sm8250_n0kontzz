@@ -473,9 +473,9 @@ jobs:
           if [ "$BUILD_MODE" = "matrix" ]; then
             VARIANTS_TEXT="This release includes the following kernel variants:
           
-          - **No KernelSU**: Standard kernel without KernelSU
-          - **KernelSU-Next**: Kernel with KernelSU-Next integration
-          - **KernelSU-Next with SuSFS**: Kernel with KernelSU-Next and SuSFS support"
+          - **No KernelSU Next**: This is the standard kernel without KernelSU Next if you're not using KernelSU Next and using Magisk, for instance
+          - **KernelSU Next**: Kernel with KernelSU Next integration
+          - **KernelSU Next with SuSFS**: Kernel with KernelSU Next and SuSFS support"
           else
             SELECTED_VARIANT="${{ github.event.inputs.KERNEL_VARIANT }}"
 
