@@ -23,7 +23,7 @@ on:
       KERNEL_TREE_BRANCH:
         description: "Kernel Tree Branch (Custom)"
         required: false
-        default: "susfs-v1.5.5-munch"
+        default: "susfs-v1.5.7-munch"
       ADD_KERNELSU:
         description: "Add KernelSU (Custom)"
         type: boolean
@@ -100,7 +100,7 @@ jobs:
             ksu_setup_url: "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next/kernel/setup.sh"
             ksu_setup_branch: "next"
           - name: "KSUN-SuSFS"
-            branch: "susfs-v1.5.5-munch"
+            branch: "susfs-v1.5.7-munch"
             add_ksu: true
             ksu_name: "KSUN"
             ksu_setup_url: "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next-susfs/kernel/setup.sh"
@@ -284,7 +284,7 @@ jobs:
             echo "ANYKERNEL_ZIP_NAME=N0Kontzzz-munch" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "KernelSU-Next with SuSFS" ]; then
             echo "KERNEL_TREE=$KERNEL_REPO_URL" >> $GITHUB_OUTPUT
-            echo "KERNEL_TREE_BRANCH=susfs-v1.5.5-munch" >> $GITHUB_OUTPUT
+            echo "KERNEL_TREE_BRANCH=susfs-v1.5.7-munch" >> $GITHUB_OUTPUT
             echo "ADD_KERNELSU=true" >> $GITHUB_OUTPUT
             echo "KERNELSU_NAME=KSUN" >> $GITHUB_OUTPUT
             echo "KERNELSU_SETUP_URL=https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next-susfs/kernel/setup.sh" >> $GITHUB_OUTPUT
