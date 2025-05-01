@@ -100,14 +100,14 @@ jobs:
             ksu_setup_url: "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next/kernel/setup.sh"
             ksu_setup_branch: "next"
           - name: "KSUN-SuSFS"
-            branch: "susfs-v1.5.7-munch"
+            branch: "susfs-v1.5.5-munch"
             add_ksu: true
             ksu_name: "KSUN"
             ksu_setup_url: "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next-susfs/kernel/setup.sh"
             ksu_setup_branch: "next-susfs-dev"
     runs-on: ubuntu-latest
     env:
-      CLANG_DOWNLOAD_LINK: https://github.com/Impqxr/aosp_clang_ci/releases/download/13289611/clang-13289611-linux-x86.tar.xz
+      CLANG_DOWNLOAD_LINK: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
       KERNEL_REPO_URL: https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz
       DTBO_REPO_URL: https://github.com/bimoalfarrabi/AKmunch
       DTBO_REPO_BRANCH: main
@@ -117,9 +117,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: clang
-          key: aosp-clang-21
+          key: google-clang-20
           restore-keys: |
-            aosp-clang-21-
+            google-clang-20-
 
       - name: Download and Extract Clang (if not cached)
         if: steps.cache-clang.outputs.cache-hit != 'true'
@@ -254,7 +254,7 @@ jobs:
     permissions:
       contents: write
     env:
-      CLANG_DOWNLOAD_LINK: https://github.com/Impqxr/aosp_clang_ci/releases/download/13289611/clang-13289611-linux-x86.tar.xz
+      CLANG_DOWNLOAD_LINK: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
       KERNEL_REPO_URL: https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz
       DTBO_REPO_URL: https://github.com/bimoalfarrabi/AKmunch
       DTBO_REPO_BRANCH: main
@@ -284,7 +284,7 @@ jobs:
             echo "ANYKERNEL_ZIP_NAME=N0Kontzzz-munch" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.inputs.KERNEL_VARIANT }}" = "KernelSU-Next with SuSFS" ]; then
             echo "KERNEL_TREE=$KERNEL_REPO_URL" >> $GITHUB_OUTPUT
-            echo "KERNEL_TREE_BRANCH=susfs-v1.5.7-munch" >> $GITHUB_OUTPUT
+            echo "KERNEL_TREE_BRANCH=susfs-v1.5.5-munch" >> $GITHUB_OUTPUT
             echo "ADD_KERNELSU=true" >> $GITHUB_OUTPUT
             echo "KERNELSU_NAME=KSUN" >> $GITHUB_OUTPUT
             echo "KERNELSU_SETUP_URL=https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/next-susfs/kernel/setup.sh" >> $GITHUB_OUTPUT
@@ -323,9 +323,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: clang
-          key: aosp-clang-21
+          key: google-clang-20
           restore-keys: |
-            aosp-clang-21-
+            google-clang-20-
 
       - name: Download and Extract Clang (if not cached)
         if: steps.cache-clang.outputs.cache-hit != 'true'
