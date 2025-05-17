@@ -108,7 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CLANG_DOWNLOAD_LINK: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
-      KERNEL_REPO_URL: https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz
+      KERNEL_REPO_URL: https://github.com/Raenelrauff/kernel_xiaomi_sm8250_n0kontzz
       DTBO_REPO_URL: https://github.com/bimoalfarrabi/AKmunch
       DTBO_REPO_BRANCH: main
     steps:
@@ -255,7 +255,7 @@ jobs:
       contents: write
     env:
       CLANG_DOWNLOAD_LINK: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
-      KERNEL_REPO_URL: https://github.com/bimoalfarrabi/kernel_xiaomi_sm8250_n0kontzz
+      KERNEL_REPO_URL: https://github.com/Raenelrauff/kernel_xiaomi_sm8250_n0kontzz
       DTBO_REPO_URL: https://github.com/bimoalfarrabi/AKmunch
       DTBO_REPO_BRANCH: main
     steps:
